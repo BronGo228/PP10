@@ -231,7 +231,7 @@ curl "http://localhost:8000/audit?action_type=receipt"
 ## Структура файлов
 
 ```
-warehouse_api/
+rek/
 ├── main.py          # FastAPI-приложение, все эндпоинты
 ├── models.py        # SQLAlchemy-модели (схема БД)
 ├── schemas.py       # Pydantic-схемы (валидация)
