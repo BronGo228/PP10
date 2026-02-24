@@ -57,7 +57,12 @@ component_categories ──< components >── manufacturers
 ## Установка и запуск
 
 ```bash
-# 1. Установить зависимости
+# 1. Создайте виртуальное окружение
+cd C:\Users\ИМЯ\rek
+python -m venv venv
+venv\Scripts\activate
+
+# 2. Установить зависимости
 pip install -r requirements.txt
 
 # 2. Запустить сервер (БД создаётся и заполняется автоматически)
