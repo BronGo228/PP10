@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Диаграммы — Склад РЭК</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Unbounded:wght@300;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09090f;
+    --surface: #10101c;
+    --card: #14141f;
+    --border: #1e1e2e;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --accent3: #10b981;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --glow: rgba(0,212,255,0.15);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 60px 60px 40px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%);
+  }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+
+  h1 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(28px, 4vw, 52px);
+    font-weight: 900;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 60%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(9,9,15,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 60px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+  }
+
+  nav a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  nav a:hover { color: var(--text); border-bottom-color: var(--accent); }
+  nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+  nav a .num {
+    width: 20px; height: 20px;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--accent);
+  }
+
+  /* ── MAIN ── */
+  main {
+    position: relative;
+    z-index: 5;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 80px;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    scroll-margin-top: 60px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  .section-number {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 4px;
+    padding: 6px 10px;
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .section-title-group h2 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(18px, 2.5vw, 28px);
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .section-title-group p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 600px;
+  }
+
+  /* ── DIAGRAM CARD ── */
+  .diagram-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .diagram-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+
+  .diagram-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+  }
+
+  .toolbar-dots { display: flex; gap: 6px; }
+  .toolbar-dots span {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .toolbar-dots span:nth-child(1) { background: #ff5f57; }
+  .toolbar-dots span:nth-child(2) { background: #febc2e; }
+  .toolbar-dots span:nth-child(3) { background: #28c840; }
+
+  .toolbar-name {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .diagram-body {
+    padding: 32px;
+    overflow-x: auto;
+  }
+
+  /* ── MERMAID THEME OVERRIDES ── */
+  .mermaid {
+    display: flex;
+    justify-content: center;
+  }
+
+  /* ── LEGEND ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 2px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 5;
+    padding: 40px 60px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  @media (max-width: 768px) {
+    header, main, footer { padding: 30px 20px; }
+    nav { padding: 0 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-badge">
+    <span class="badge-dot"></span>
+    Проектная документация
+  </div>
+  <h1>Диаграммы системы<br>учёта склада РЭК</h71>
+  <p class="subtitle"></p>
+</header>
+
+<nav>
+  <a href="#er" class="active"><span class="num">1</span>ER-диаграмма</a>
+  <a href="#uml"><span class="num">2</span>UML классов</a>
+  <a href="#usecase"><span class="num">3</span>Варианты использования</a>
+  <a href="#sequence"><span class="num">4</span>Последовательности</a>
+  <a href="#components"><span class="num">5</span>Компоненты</a>
+  <a href="#packages"><span class="num">6</span>Пакеты</a>
+  <a href="#activity"><span class="num">7</span>Деятельность</a>
+</nav>
+
+<main>
+
+  <!-- ════════════════════════════════════════
+       1. ER ДИАГРАММА
+  ═════════════════════════════════════════ -->
+  <section class="section" id="er">
+    <div class="section-header">
+      <span class="section-number">01</span>
+      <div class="section-title-group">
+        <h2>ER-диаграмма</h2>
+        <p>Сущности базы данных и связи между ними. Показывает 14 таблиц: справочники, компоненты, остатки, документы и журнал аудита.</p>
+      </div>
+    </div>
+    <div class="diagram-card">
+      <div class="diagram-toolbar">
+        <div class="toolbar-dots"><span></span><span></span><span></span></div>
+        <span class="toolbar-name">entity-relationship-diagram.mermaid</span>
+        <span></span>
+      </div>
+      <div class="diagram-body">
+        <div class="mermaid">
+erDiagram
+    COMPONENT_CATEGORIES {
+        int id PK
+        string name
+        string code
+        string description
+        datetime created_at
+    }
+    MANUFACTURERS {
+        int id PK
+        string name
+        string country
+        string website
+        datetime created_at
+    }
+    SUPPLIERS {
+        int id PK
+        string name
+        string contact_name
+        string phone
+        string email
+        string inn
+        bool is_active
+        datetime created_at
+    }
+    STORAGE_LOCATIONS {
+        int id PK
+        string code
+        string rack
+        int shelf
+        int cell
+        bool is_active
+        datetime created_at
+    }
+    COMPONENTS {
+        int id PK
+        string part_number
+        string name
+        int category_id FK
+        int manufacturer_id FK
+        string package
+        string unit
+        float min_stock
+        float price_rub
+        bool is_active
+        datetime created_at
+    }
+    STOCKS {
+        int id PK
+        int component_id FK
+        int location_id FK
+        float quantity
+        float reserved
+        datetime updated_at
+    }
+    RECEIPTS {
+        int id PK
+        string number
+        int supplier_id FK
+        string status
+        string invoice_number
+        string created_by
+        datetime received_at
+        datetime created_at
+    }
+    RECEIPT_ITEMS {
+        int id PK
+        int receipt_id FK
+        int component_id FK
+        int location_id FK
+        float quantity
+        float price_rub
+    }
+    ISSUES {
+        int id PK
+        string number
+        string department
+        string requester
+        string status
+        string purpose
+        string created_by
+        datetime issued_at
+        datetime created_at
+    }
+    ISSUE_ITEMS {
+        int id PK
+        int issue_id FK
+        int component_id FK
+        int location_id FK
+        float quantity
+    }
+    INVENTORIES {
+        int id PK
+        string number
+        string status
+        string created_by
+        datetime started_at
+        datetime finished_at
+    }
+    INVENTORY_ITEMS {
+        int id PK
+        int inventory_id FK
+        int component_id FK
+        int location_id FK
+        float expected_quantity
+        float actual_quantity
+        float discrepancy
+    }
+    AUDIT_LOGS {
+        int id PK
+        string action_type
+        string entity_type
+        int entity_id
+        int component_id FK
+        int location_id FK
+        float quantity_before
+        float quantity_after
+        string performed_by
+        datetime created_at
+    }
+
+    COMPONENT_CATEGORIES ||--o{ COMPONENTS : "категория"
+    MANUFACTURERS ||--o{ COMPONENTS : "производитель"
+    COMPONENTS ||--o{ STOCKS : "остатки"
+    STORAGE_LOCATIONS ||--o{ STOCKS : "место хранения"
+    SUPPLIERS ||--o{ RECEIPTS : "поставщик"
+    RECEIPTS ||--|{ RECEIPT_ITEMS : "позиции"
+    COMPONENTS ||--o{ RECEIPT_ITEMS : "компонент"
+    STORAGE_LOCATIONS ||--o{ RECEIPT_ITEMS : "ячейка"
+    ISSUES ||--|{ ISSUE_ITEMS : "позиции"
+    COMPONENTS ||--o{ ISSUE_ITEMS : "компонент"
+    STORAGE_LOCATIONS ||--o{ ISSUE_ITEMS : "ячейка"
+    INVENTORIES ||--|{ INVENTORY_ITEMS : "позиции"
+    COMPONENTS ||--o{ INVENTORY_ITEMS : "компонент"
+    STORAGE_LOCATIONS ||--o{ INVENTORY_ITEMS : "ячейка"
+    COMPONENTS ||--o{ AUDIT_LOGS : "аудит"
+    STORAGE_LOCATIONS ||--o{ AUDIT_LOGS : "аудит"
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       2. UML ДИАГРАММА КЛАССОВ
+  ═════════════════════════════════════════ -->
+  <section class="section" id="uml">
+    <div class="section-header">
+      <span class="section-number">02</span>
+      <div class="section-title-group">
+        <h2>UML-диаграмма классов</h2>
+        <p>Классы системы, их атрибуты, методы и связи. Отражает Python-модели SQLAlchemy и Pydantic-схемы.</p>
+      </div>
+    </div>
+    <div class="diagram-card">
+      <div class="diagram-toolbar">
+        <div class="toolbar-dots"><span></span><span></span><span></span></div>
+        <span class="toolbar-name">class-diagram.mermaid</span>
+        <span></span>
+      </div>
+      <div class="diagram-body">
+        <div class="mermaid">
+classDiagram
+    class ComponentCategory {
+        +int id
+        +str name
+        +str code
+        +str description
+        +datetime created_at
+        +list~Component~ components
+    }
+    class Manufacturer {
+        +int id
+        +str name
+        +str country
+        +str website
+        +list~Component~ components
+    }
+    class Supplier {
+        +int id
+        +str name
+        +str contact_name
+        +str phone
+        +str email
+        +str inn
+        +bool is_active
+        +list~Receipt~ receipts
+    }
+    class StorageLocation {
+        +int id
+        +str code
+        +str rack
+        +int shelf
+        +int cell
+        +bool is_active
+        +list~Stock~ stocks
+    }
+    class Component {
+        +int id
+        +str part_number
+        +str name
+        +str package
+        +str unit
+        +float min_stock
+        +float price_rub
+        +bool is_active
+        +list~Stock~ stocks
+        +list~ReceiptItem~ receipt_items
+        +list~IssueItem~ issue_items
+        +list~InventoryItem~ inventory_items
+    }
+    class Stock {
+        +int id
+        +float quantity
+        +float reserved
+        +datetime updated_at
+        +available() float
+    }
+    class Receipt {
+        +int id
+        +str number
+        +ReceiptStatus status
+        +str invoice_number
+        +str created_by
+        +datetime received_at
+        +confirm() void
+        +cancel() void
+    }
+    class ReceiptItem {
+        +int id
+        +float quantity
+        +float price_rub
+    }
+    class Issue {
+        +int id
+        +str number
+        +IssueStatus status
+        +str department
+        +str requester
+        +str purpose
+        +confirm() void
+        +cancel() void
+    }
+    class IssueItem {
+        +int id
+        +float quantity
+    }
+    class Inventory {
+        +int id
+        +str number
+        +InventoryStatus status
+        +datetime started_at
+        +datetime finished_at
+        +complete() void
+    }
+    class InventoryItem {
+        +int id
+        +float expected_quantity
+        +float actual_quantity
+        +float discrepancy
+        +calc_discrepancy() float
+    }
+    class AuditLog {
+        +int id
+        +AuditActionType action_type
+        +str entity_type
+        +int entity_id
+        +float quantity_before
+        +float quantity_after
+        +str performed_by
+        +datetime created_at
+    }
+    class WarehouseService {
+        +stock_upsert(db, comp_id, loc_id, delta) Stock
+        +write_audit(db, action, entity) void
+        +get_stock_report(db) list
+        +check_availability(db, items) bool
+    }
+
+    ComponentCategory "1" --o "N" Component : category
+    Manufacturer "1" --o "N" Component : manufacturer
+    Component "1" --o "N" Stock : has
+    StorageLocation "1" --o "N" Stock : located_at
+    Supplier "1" --o "N" Receipt : supplied_by
+    Receipt "1" *-- "N" ReceiptItem : contains
+    Component "1" --o "N" ReceiptItem : component
+    StorageLocation "1" --o "N" ReceiptItem : destination
+    Issue "1" *-- "N" IssueItem : contains
+    Component "1" --o "N" IssueItem : component
+    StorageLocation "1" --o "N" IssueItem : source
+    Inventory "1" *-- "N" InventoryItem : contains
+    Component "1" --o "N" InventoryItem : component
+    WarehouseService ..> Stock : manages
+    WarehouseService ..> AuditLog : writes
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       3. ВАРИАНТЫ ИСПОЛЬЗОВАНИЯ
+  ═════════════════════════════════════════ -->
+  <section class="section" id="usecase">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <div class="section-title-group">
+        <h2>Диаграмма вариантов использования</h2>
+        <p>Акторы системы и их взаимодействия. Кладовщик, руководитель и аудитор — три роли с разными правами.</p>
+      </div>
+    </div>
+    <div class="diagram-card">
+      <div class="diagram-toolbar">
+        <div class="toolbar-dots"><span></span><span></span><span></span></div>
+        <span class="toolbar-name">use-case-diagram.mermaid</span>
+        <span></span>
+      </div>
+      <div class="diagram-body">
+        <div class="mermaid">
+graph LR
+    subgraph Акторы
+        A1["👤 Кладовщик"]
+        A2["👔 Руководитель"]
+        A3["🔍 Аудитор"]
+    end
+
+    subgraph СУС-РЭК ["🏭 Система учёта склада РЭК"]
+        subgraph Справочники ["📋 Управление справочниками"]
+            UC1["Управление каталогом\nкомпонентов"]
+            UC2["Управление поставщиками"]
+            UC3["Управление ячейками хранения"]
+            UC4["Управление категориями"]
+        end
+
+        subgraph Движение ["📦 Движение товаров"]
+            UC5["Оформить приходную\nнакладную"]
+            UC6["Подтвердить приход"]
+            UC7["Оформить расходную\nнакладную"]
+            UC8["Подтвердить выдачу"]
+            UC9["Скорректировать остаток"]
+        end
+
+        subgraph Инвентаризация ["🔢 Инвентаризация"]
+            UC10["Провести инвентаризацию"]
+            UC11["Зафиксировать расхождения"]
+        end
+
+        subgraph Отчёты ["📊 Аналитика и аудит"]
+            UC12["Просмотреть остатки"]
+            UC13["Отчёт о дефиците"]
+            UC14["История движений"]
+            UC15["Журнал аудита"]
+        end
+    end
+
+    A1 --> UC1
+    A1 --> UC2
+    A1 --> UC3
+    A1 --> UC4
+    A1 --> UC5
+    A1 --> UC6
+    A1 --> UC7
+    A1 --> UC8
+    A1 --> UC9
+    A1 --> UC10
+    A1 --> UC11
+    A1 --> UC12
+
+    A2 --> UC12
+    A2 --> UC13
+    A2 --> UC14
+    A2 --> UC6
+    A2 --> UC8
+
+    A3 --> UC15
+    A3 --> UC14
+    A3 --> UC12
+    A3 --> UC13
+
+    UC10 -.->|include| UC11
+    UC5 -.->|extend| UC6
+    UC7 -.->|extend| UC8
+
+    style Справочники fill:#1a1a2e,stroke:#7c3aed,color:#e2e8f0
+    style Движение fill:#0d1b2a,stroke:#00d4ff,color:#e2e8f0
+    style Инвентаризация fill:#0d2818,stroke:#10b981,color:#e2e8f0
+    style Отчёты fill:#1a0d0d,stroke:#f59e0b,color:#e2e8f0
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       4. ДИАГРАММА ПОСЛЕДОВАТЕЛЬНОСТИ
+  ═════════════════════════════════════════ -->
+  <section class="section" id="sequence">
+    <div class="section-header">
+      <span class="section-number">04</span>
+      <div class="section-title-group">
+        <h2>Диаграммы последовательности</h2>
+        <p>Временной порядок взаимодействий между объектами для ключевых сценариев: подтверждение прихода и выдача компонентов.</p>
+      </div>
+    </div>
+
+    <div class="diagram-card" style="margin-bottom:24px">
+      <div class="diagram-toolbar">
+        <div class="toolbar-dots"><span></span><span></span><span></span></div>
+        <span class="toolbar-name">sequence-receipt-confirm.mermaid</span>
+        <span></span>
+      </div>
+      <div class="diagram-body">
+        <div class="mermaid">
+sequenceDiagram
+    actor Кладовщик
+    participant API as FastAPI\n(main.py)
+    participant DB as SQLAlchemy\n(database)
+    participant Stock as Stock\nTable
+    participant Audit as AuditLog\nTable
+
+    Кладовщик->>API: POST /receipts\n{supplier_id, items[]}
+
+    API->>DB: Проверить supplier_id
+    DB-->>API: Поставщик найден
+
+    API->>DB: Создать Receipt (статус: draft)
+    loop для каждой позиции
+        API->>DB: Создать ReceiptItem
+    end
+    DB-->>API: Receipt создан (id=1)
+    API-->>Кладовщик: 201 Created {id:1, status:"draft"}
+
+    Кладовщик->>API: POST /receipts/1/confirm\n{performed_by: "Иванов"}
+
+    API->>DB: Получить Receipt id=1
+    DB-->>API: Receipt (status=draft)
+    API->>API: Проверить status == draft ✓
+
+    loop для каждой позиции накладной
+        API->>Stock: SELECT остаток\n(component_id, location_id)
+        Stock-->>API: quantity_before
+        API->>Stock: UPDATE quantity\n+= item.quantity
+        API->>Audit: INSERT audit_log\n(action=receipt,\nbefore, after, operator)
+        Audit-->>API: Запись создана
+    end
+
+    API->>DB: UPDATE Receipt\nstatus=confirmed\nreceived_at=now()
+    DB-->>API: OK
+    API-->>Кладовщик: 200 OK {status:"confirmed"}
+        </div>
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-toolbar">
+        <div class="toolbar-dots"><span></span><span></span><span></span></div>
+        <span class="toolbar-name">sequence-issue-confirm.mermaid</span>
+        <span></span>
+      </div>
+      <div class="diagram-body">
+        <div class="mermaid">
+sequenceDiagram
+    actor Кладовщик
+    participant API as FastAPI\n(main.py)
+    participant DB as SQLAlchemy
+    participant Stock as Stock\nTable
+    participant Audit as AuditLog\nTable
+
+    Кладовщик->>API: POST /issues\n{department, items[]}
+    API->>DB: Создать Issue (draft)\n+ IssueItems
+    API-->>Кладовщик: 201 Created
+
+    Кладовщик->>API: POST /issues/1/confirm
+
+    API->>DB: Получить Issue + Items
+    DB-->>API: Issue (draft)
+
+    loop для каждой позиции
+        API->>Stock: SELECT quantity\n(comp_id, loc_id)
+        Stock-->>API: quantity_current
+
+        alt quantity >= requested
+            API->>Stock: UPDATE quantity\n-= item.quantity
+            API->>Audit: INSERT audit_log\n(action=issue)
+            Audit-->>API: OK
+        else quantity < requested
+            API-->>Кладовщик: 400 Bad Request\n"Недостаточно: доступно X,\nзапрошено Y"
+            Note over API,Stock: Транзакция откатывается,\nостатки не изменены
+        end
+    end
+
+    API->>DB: UPDATE Issue\nstatus=confirmed, issued_at=now()
+    API-->>Кладовщик: 200 OK {status:"confirmed"}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       5. ДИАГРАММА КОМПОНЕНТОВ
+  ═════════════════════════════════════════ -->
+  <section class="section" id="components">
+    <div class="section-header">
+      <span class="section-number">05</span>
+      <div class="section-title-group">
+        <h2>Диаграмма компонентов</h2>
+        <p>Программные компоненты системы и интерфейсы взаимодействия между ними.</p>
+      </div>
+    </div>
+    <div class="diagram-card">
+      <div class="diagram-toolbar">
+        <div class="toolbar-dots"><span></span><span></span><span></span></div>
+        <span class="toolbar-name">component-diagram.mermaid</span>
+        <span></span>
+      </div>
+      <div class="diagram-body">
+        <div class="mermaid">
+graph TB
+    subgraph Client ["🌐 Клиентский уровень"]
+        SWAGGER["Swagger UI\n/docs"]
+        REDOC["ReDoc\n/redoc"]
+        HTTPCLIENT["HTTP-клиент\n(curl / Postman)"]
+        FRONTEND["Внешнее\nприложение"]
+    end
+
+    subgraph AppLayer ["⚙️ Уровень приложения — main.py"]
+        subgraph Routes ["Маршруты (Routers)"]
+            R1["📋 /categories\n/manufacturers\n/suppliers\n/locations"]
+            R2["🔌 /components"]
+            R3["📦 /stocks"]
+            R4["📥 /receipts"]
+            R5["📤 /issues"]
+            R6["🔢 /inventories"]
+            R7["📊 /reports\n/audit"]
+        end
+        BL["Бизнес-логика\nstock_upsert()\nwrite_audit()\nget_or_404()"]
+        CORS["CORS\nMiddleware"]
+    end
+
+    subgraph DataLayer ["💾 Уровень данных"]
+        subgraph Models ["models.py — SQLAlchemy ORM"]
+            M1["Component\nComponentCategory\nManufacturer"]
+            M2["Stock\nStorageLocation\nSupplier"]
+            M3["Receipt / ReceiptItem\nIssue / IssueItem"]
+            M4["Inventory / InventoryItem\nAuditLog"]
+        end
+        subgraph Schemas ["schemas.py — Pydantic"]
+            S1["ComponentCreate/Read\nStockAdjust"]
+            S2["ReceiptCreate\nIssueCreate\nInventoryCreate"]
+            S3["AuditLogRead\nStockReport"]
+        end
+        subgraph DB ["database.py"]
+            ENGINE["SQLAlchemy\nEngine"]
+            SESSION["SessionLocal\nget_db()"]
+            INIT["init_db()\n_seed()"]
+        end
+    end
+
+    subgraph Storage ["🗄️ Хранилище"]
+        SQLITE[("SQLite\nwarehouse.db")]
+        POSTGRES[("PostgreSQL\n(production)")]
+    end
+
+    SWAGGER --> CORS
+    REDOC --> CORS
+    HTTPCLIENT --> CORS
+    FRONTEND --> CORS
+
+    CORS --> R1 & R2 & R3 & R4 & R5 & R6 & R7
+    R1 & R2 & R3 & R4 & R5 & R6 & R7 --> BL
+
+    BL --> M1 & M2 & M3 & M4
+    BL --> S1 & S2 & S3
+
+    M1 & M2 & M3 & M4 --> SESSION
+    SESSION --> ENGINE
+    ENGINE --> SQLITE
+    ENGINE -.->|"swap\nDATABASE_URL"| POSTGRES
+    INIT --> SESSION
+
+    style Client fill:#0d1b2a,stroke:#00d4ff,color:#e2e8f0
+    style AppLayer fill:#1a1a2e,stroke:#7c3aed,color:#e2e8f0
+    style DataLayer fill:#0d2818,stroke:#10b981,color:#e2e8f0
+    style Storage fill:#1a0d0d,stroke:#f59e0b,color:#e2e8f0
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       6. ДИАГРАММА ПАКЕТОВ
+  ═════════════════════════════════════════ -->
+  <section class="section" id="packages">
+    <div class="section-header">
+      <span class="section-number">06</span>
+      <div class="section-title-group">
+        <h2>Диаграмма пакетов</h2>
+        <p>Организация модулей и зависимостей между ними. Показывает пакеты Python и внешние библиотеки.</p>
+      </div>
+    </div>
+    <div class="diagram-card">
+      <div class="diagram-toolbar">
+        <div class="toolbar-dots"><span></span><span></span><span></span></div>
+        <span class="toolbar-name">package-diagram.mermaid</span>
+        <span></span>
+      </div>
+      <div class="diagram-body">
+        <div class="mermaid">
+graph TD
+    subgraph External ["📦 Внешние пакеты (pip)"]
+        PKG1["fastapi\n0.109+"]
+        PKG2["uvicorn\n0.27+"]
+        PKG3["sqlalchemy\n2.0+"]
+        PKG4["pydantic\n2.6+"]
+        PKG5["python\nbuiltins\n(json, datetime,\nenum, typing)"]
+    end
+
+    subgraph App ["🏗️ Пакет приложения: warehouse_api/"]
+
+        subgraph Core ["Ядро"]
+            MAIN["main.py\n─────────────\nFastAPI app\nAll endpoints\nBusiness logic\nAudit writer"]
+        end
+
+        subgraph Data ["Данные"]
+            MODELS["models.py\n─────────────\nBase (ORM)\nComponentCategory\nManufacturer\nSupplier\nStorageLocation\nComponent\nStock\nReceipt / Item\nIssue / Item\nInventory / Item\nAuditLog\nEnums"]
+            SCHEMAS["schemas.py\n─────────────\nCreate schemas\nRead schemas\nUpdate schemas\nReport schemas"]
+            DATABASE["database.py\n─────────────\ncreate_engine()\nSessionLocal\nget_db()\ninit_db()\n_seed()"]
+        end
+
+        subgraph Config ["Конфигурация"]
+            REQ["requirements.txt\n─────────────\nDependencies list"]
+            README["README.md\n─────────────\nDocumentation"]
+        end
+
+        subgraph Generated ["Генерируется при запуске"]
+            WAREHOUSEDB[("warehouse.db\nSQLite file")]
+        end
+    end
+
+    PKG1 --> MAIN
+    PKG2 --> MAIN
+    PKG3 --> MODELS
+    PKG3 --> DATABASE
+    PKG4 --> SCHEMAS
+    PKG5 --> MAIN
+
+    MAIN --> MODELS
+    MAIN --> SCHEMAS
+    MAIN --> DATABASE
+    SCHEMAS --> MODELS
+    DATABASE --> MODELS
+    DATABASE --> WAREHOUSEDB
+
+    style External fill:#1a0d2e,stroke:#7c3aed,color:#e2e8f0
+    style App fill:#091520,stroke:#00d4ff,color:#e2e8f0
+    style Core fill:#0d2030,stroke:#00d4ff,color:#e2e8f0
+    style Data fill:#0d2030,stroke:#10b981,color:#e2e8f0
+    style Config fill:#0d2030,stroke:#64748b,color:#e2e8f0
+    style Generated fill:#1a1a0d,stroke:#f59e0b,color:#e2e8f0
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       7. ДИАГРАММА ДЕЯТЕЛЬНОСТИ
+  ═════════════════════════════════════════ -->
+  <section class="section" id="activity">
+    <div class="section-header">
+      <span class="section-number">07</span>
+      <div class="section-title-group">
+        <h2>Диаграммы деятельности</h2>
+        <p>Поток управления для ключевых бизнес-процессов: обработка прихода/расхода и проведение инвентаризации.</p>
+      </div>
+    </div>
+
+    <div class="diagram-card" style="margin-bottom:24px">
+      <div class="diagram-toolbar">
+        <div class="toolbar-dots"><span></span><span></span><span></span></div>
+        <span class="toolbar-name">activity-receipt-issue.mermaid</span>
+        <span></span>
+      </div>
+      <div class="diagram-body">
+        <div class="mermaid">
+flowchart TD
+    START(["🟢 Начало"]) --> CHOOSE{Тип операции?}
+
+    CHOOSE -->|Приход| R1["Создать приходную\nнакладную (черновик)"]
+    CHOOSE -->|Расход| I1["Создать расходную\nнакладную (черновик)"]
+
+    R1 --> R2["Добавить позиции:\nкомпонент, ячейка, кол-во, цена"]
+    R2 --> R3{Подтвердить\nнакладную?}
+    R3 -->|Нет — отменить| R4["Установить статус:\nCANCELLED"]
+    R3 -->|Да| R5{Статус ==\ndraft?}
+    R5 -->|Нет| R6["❌ Ошибка 400:\nНакладная уже обработана"]
+    R5 -->|Да| R7["Для каждой позиции:"]
+
+    R7 --> R8["Найти/создать Stock\n(component_id, location_id)"]
+    R8 --> R9["quantity += item.quantity"]
+    R9 --> R10["Записать в AuditLog\n(action=receipt)"]
+    R10 --> R11{Ещё\nпозиции?}
+    R11 -->|Да| R7
+    R11 -->|Нет| R12["Статус → CONFIRMED\nreceived_at = now()"]
+    R12 --> END_R(["✅ Приход проведён"])
+
+    I1 --> I2["Добавить позиции:\nкомпонент, ячейка, кол-во"]
+    I2 --> I3{Подтвердить\nнакладную?}
+    I3 -->|Нет — отменить| I4["Статус → CANCELLED"]
+    I3 -->|Да| I5["Для каждой позиции:"]
+
+    I5 --> I6["Получить Stock\n(component_id, location_id)"]
+    I6 --> I7{quantity >=\nрасход?}
+    I7 -->|Нет| I8["❌ Ошибка 400:\nНедостаточно компонентов\nОткат транзакции"]
+    I7 -->|Да| I9["quantity -= item.quantity"]
+    I9 --> I10["Записать в AuditLog\n(action=issue)"]
+    I10 --> I11{Ещё\nпозиции?}
+    I11 -->|Да| I5
+    I11 -->|Нет| I12["Статус → CONFIRMED\nissued_at = now()"]
+    I12 --> END_I(["✅ Расход проведён"])
+
+    style START fill:#10b981,color:#fff,stroke:none
+    style END_R fill:#10b981,color:#fff,stroke:none
+    style END_I fill:#10b981,color:#fff,stroke:none
+    style R6 fill:#7f1d1d,color:#fca5a5,stroke:#ef4444
+    style I8 fill:#7f1d1d,color:#fca5a5,stroke:#ef4444
+        </div>
+      </div>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-toolbar">
+        <div class="toolbar-dots"><span></span><span></span><span></span></div>
+        <span class="toolbar-name">activity-inventory.mermaid</span>
+        <span></span>
+      </div>
+      <div class="diagram-body">
+        <div class="mermaid">
+flowchart TD
+    INV_START(["🟢 Начало инвентаризации"]) --> INV1["Создать акт инвентаризации\n(статус: in_progress)"]
+    INV1 --> INV2["Кладовщик физически\nподсчитывает компоненты"]
+    INV2 --> INV3["Вносит фактические\nостатки в систему"]
+    INV3 --> INV4["Для каждой позиции акта:"]
+
+    INV4 --> INV5["Получить учётный остаток\nиз таблицы stocks"]
+    INV5 --> INV6["expected = stocks.quantity\nactual = input.actual_quantity"]
+    INV6 --> INV7["discrepancy = actual - expected"]
+    INV7 --> INV8{discrepancy\n== 0?}
+
+    INV8 -->|Нет — есть расхождение| INV9["Обновить stocks.quantity\n= actual_quantity"]
+    INV9 --> INV10["Записать в AuditLog\n(action=inventory,\nbefore=expected,\nafter=actual)"]
+    INV8 -->|Да — расхождения нет| INV11["Позиция без изменений"]
+
+    INV10 --> INV12{Ещё\nпозиции?}
+    INV11 --> INV12
+
+    INV12 -->|Да| INV4
+    INV12 -->|Нет| INV13["Статус → COMPLETED\nfinished_at = now()"]
+    INV13 --> INV14["Сформировать отчёт\nо расхождениях"]
+    INV14 --> INV_END(["✅ Инвентаризация завершена"])
+
+    style INV_START fill:#10b981,color:#fff,stroke:none
+    style INV_END fill:#10b981,color:#fff,stroke:none
+    style INV9 fill:#1a0d2e,color:#c4b5fd,stroke:#7c3aed
+    style INV10 fill:#0d1b2a,color:#93c5fd,stroke:#3b82f6
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <span>СУС-РЭК · Система учёта склада радиоэлектронных компонентов</span>
+  <span>FastAPI · SQLAlchemy · SQLite · Pydantic</span>
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#14141f',
+      primaryColor: '#1e2a3a',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#00d4ff',
+      lineColor: '#00d4ff',
+      secondaryColor: '#1a1a2e',
+      tertiaryColor: '#0d2818',
+      edgeLabelBackground: '#14141f',
+      clusterBkg: '#10101c',
+      clusterBorder: '#2e2e4e',
+      titleColor: '#ffffff',
+      nodeTextColor: '#e2e8f0',
+      attributeBackgroundColorEven: '#10101c',
+      attributeBackgroundColorOdd: '#14141f',
+      fontFamily: 'JetBrains Mono, monospace',
+      fontSize: '13px',
+    },
+    er: {
+      diagramPadding: 30,
+      layoutDirection: 'TB',
+      minEntityWidth: 100,
+      minEntityHeight: 75,
+      entityPadding: 15,
+    },
+    sequence: {
+      actorMargin: 60,
+      boxTextMargin: 8,
+      noteMargin: 12,
+      messageMargin: 40,
+    },
+    flowchart: {
+      curve: 'basis',
+      padding: 20,
+    }
+  });
+
+  // Active nav link on scroll
+  const sections = document.querySelectorAll('.section');
+  const navLinks = document.querySelectorAll('nav a');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.3 });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Smooth scroll
+  navLinks.forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>
